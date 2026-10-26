@@ -6,7 +6,7 @@ on:
       site_url:
         description: "Sayt manzili (https://...)"
         required: true
-        default: "https://ustoz-uz.vercel.app"
+        default: "https://ustoz-uz-beta.vercel.app"
 
 jobs:
   build:

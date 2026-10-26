@@ -2,7 +2,7 @@ plugins {
     id("com.android.application")
 }
 
-val siteUrl = (project.findProperty("siteUrl") as String?) ?: "https://ustoz-uz.vercel.app"
+val siteUrl = (project.findProperty("siteUrl") as String?) ?: "https://ustoz-uz-beta.vercel.app"
 
 android {
     namespace = "uz.ustoz.app"
