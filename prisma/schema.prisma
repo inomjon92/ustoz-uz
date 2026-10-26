@@ -1,0 +1,292 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  CENTER_ADMIN
+  ADMIN
+}
+
+enum LessonFormat {
+  ONLINE
+  OFFLINE
+  HYBRID
+}
+
+enum Level {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  PAYME
+  CLICK
+  UZUM
+}
+
+enum BookingStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  DONE
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String?
+  passwordHash String
+  role         Role     @default(STUDENT)
+  city         String?
+  createdAt    DateTime @default(now())
+
+  teacher        TeacherProfile?
+  centers        Center[]         @relation("CenterOwner")
+  enrollments    Enrollment[]
+  lessonProgress LessonProgress[]
+  reviews        Review[]
+  attempts       TestAttempt[]
+  certificates   Certificate[]
+  payments       Payment[]
+  bookings       Booking[]        @relation("StudentBookings")
+}
+
+model Subject {
+  id       String           @id @default(cuid())
+  name     String
+  slug     String           @unique
+  icon     String
+  teachers TeacherProfile[]
+  centers  Center[]
+  courses  Course[]
+  tests    Test[]
+}
+
+model TeacherProfile {
+  id              String       @id @default(cuid())
+  userId          String       @unique
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  headline        String
+  bio             String
+  experienceYears Int          @default(0)
+  pricePerHour    Int // so'm
+  city            String
+  format          LessonFormat @default(HYBRID)
+  verified        Boolean      @default(false)
+  rating          Float        @default(0)
+  reviewCount     Int          @default(0)
+  subjects        Subject[]
+  courses         Course[]
+  reviews         Review[]
+  bookings        Booking[]
+  createdAt       DateTime     @default(now())
+
+  @@index([city])
+  @@index([rating])
+}
+
+model Center {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String
+  city        String
+  address     String
+  phone       String
+  ownerId     String?
+  owner       User?     @relation("CenterOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  verified    Boolean   @default(false)
+  rating      Float     @default(0)
+  reviewCount Int       @default(0)
+  subjects    Subject[]
+  courses     Course[]
+  reviews     Review[]
+  createdAt   DateTime  @default(now())
+
+  @@index([city])
+}
+
+model Course {
+  id            String       @id @default(cuid())
+  title         String
+  slug          String       @unique
+  summary       String
+  description   String
+  level         Level        @default(BEGINNER)
+  format        LessonFormat @default(ONLINE)
+  price         Int // so'm, 0 = bepul
+  durationWeeks Int
+  published     Boolean      @default(true)
+  subjectId     String
+  subject       Subject      @relation(fields: [subjectId], references: [id])
+  teacherId     String?
+  teacher       TeacherProfile? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  centerId      String?
+  center        Center?      @relation(fields: [centerId], references: [id], onDelete: SetNull)
+  rating        Float        @default(0)
+  reviewCount   Int          @default(0)
+  lessons       Lesson[]
+  enrollments   Enrollment[]
+  reviews       Review[]
+  tests         Test[]
+  certificates  Certificate[]
+  createdAt     DateTime     @default(now())
+
+  @@index([subjectId])
+}
+
+model Lesson {
+  id        String           @id @default(cuid())
+  courseId  String
+  course    Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title     String
+  content   String
+  videoUrl  String?
+  minutes   Int              @default(10)
+  order     Int
+  progress  LessonProgress[]
+
+  @@unique([courseId, order])
+}
+
+model Enrollment {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  completedAt DateTime?
+  payment   Payment?
+
+  @@unique([userId, courseId])
+}
+
+model LessonProgress {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId    String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completedAt DateTime @default(now())
+
+  @@unique([userId, lessonId])
+}
+
+model Review {
+  id        String          @id @default(cuid())
+  authorId  String
+  author    User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String
+  teacherId String?
+  teacher   TeacherProfile? @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  centerId  String?
+  center    Center?         @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  courseId  String?
+  course    Course?         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now())
+
+  @@unique([authorId, teacherId])
+  @@unique([authorId, centerId])
+  @@unique([authorId, courseId])
+}
+
+model Test {
+  id          String        @id @default(cuid())
+  title       String
+  slug        String        @unique
+  description String
+  durationMin Int
+  passPercent Int           @default(70)
+  subjectId   String
+  subject     Subject       @relation(fields: [subjectId], references: [id])
+  courseId    String?
+  course      Course?       @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  questions   Question[]
+  attempts    TestAttempt[]
+}
+
+model Question {
+  id      String   @id @default(cuid())
+  testId  String
+  test    Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  text    String
+  order   Int
+  options Option[]
+}
+
+model Option {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  isCorrect  Boolean  @default(false)
+}
+
+model TestAttempt {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  testId      String
+  test        Test         @relation(fields: [testId], references: [id], onDelete: Cascade)
+  score       Int
+  total       Int
+  passed      Boolean
+  answers     Json
+  createdAt   DateTime     @default(now())
+  certificate Certificate?
+}
+
+model Certificate {
+  id        String       @id @default(cuid())
+  code      String       @unique
+  title     String
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String?
+  course    Course?      @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  attemptId String?      @unique
+  attempt   TestAttempt? @relation(fields: [attemptId], references: [id], onDelete: SetNull)
+  issuedAt  DateTime     @default(now())
+}
+
+model Payment {
+  id           String          @id @default(cuid())
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount       Int
+  provider     PaymentProvider
+  status       PaymentStatus   @default(PENDING)
+  enrollmentId String?         @unique
+  enrollment   Enrollment?     @relation(fields: [enrollmentId], references: [id], onDelete: SetNull)
+  createdAt    DateTime        @default(now())
+}
+
+model Booking {
+  id        String         @id @default(cuid())
+  studentId String
+  student   User           @relation("StudentBookings", fields: [studentId], references: [id], onDelete: Cascade)
+  teacherId String
+  teacher   TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  date      DateTime
+  message   String
+  status    BookingStatus  @default(PENDING)
+  createdAt DateTime       @default(now())
+}
