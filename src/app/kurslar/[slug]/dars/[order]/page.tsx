@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { completeLesson } from "@/app/actions";
 import { Submit } from "@/components/forms";
+import { toEmbedUrl } from "@/lib/embed";
 
 export default async function LessonPage({ params }: { params: Promise<{ slug: string; order: string }> }) {
   const { slug, order } = await params;
@@ -38,7 +39,7 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
         <h1 className="mt-1 text-2xl font-bold">{lesson.title}</h1>
         {lesson.videoUrl && (
           <div className="mt-6 aspect-video overflow-hidden rounded-xl bg-slate-900">
-            <iframe src={lesson.videoUrl} className="h-full w-full" allowFullScreen title={lesson.title} />
+            <iframe src={toEmbedUrl(lesson.videoUrl)!} className="h-full w-full" allowFullScreen title={lesson.title} />
           </div>
         )}
         <div className="prose-lesson mt-6 text-slate-700">

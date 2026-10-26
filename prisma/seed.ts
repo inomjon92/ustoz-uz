@@ -135,9 +135,16 @@ async function main() {
     db.center.deleteMany(), db.teacherProfile.deleteMany(), db.user.deleteMany(), db.subject.deleteMany(),
   ]);
 
-  const passwordHash = await bcrypt.hash("parol123", 10);
   const subj: Record<string, string> = {};
   for (const [name, slug, icon] of SUBJECTS) subj[slug] = (await db.subject.create({ data: { name, slug, icon } })).id;
+
+  // SEED_DEMO="false" bo'lsa, faqat fanlar yaratiladi va sayt bo'sh holatda boshlanadi
+  if (process.env.SEED_DEMO === "false") {
+    console.log("✅ Bo'sh baza: faqat fanlar yaratildi");
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash("parol123", 10);
 
   const students = await Promise.all(
     ["Talaba Demo", "Bekzod Nazarov", "Shahzoda Olimova", "Otabek Qodirov", "Malika Saidova"].map((name, i) =>

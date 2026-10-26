@@ -35,6 +35,7 @@ export async function Header() {
         <div className="ml-auto flex items-center gap-2">
           {user ? (
             <>
+              {user.role === "ADMIN" && <Link href="/admin" className="btn-ghost px-3 py-2">⚙️ Admin</Link>}
               <Link href="/kabinet" className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-slate-100">
                 <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">{initials(user.name)}</span>
                 <span className="hidden text-sm font-medium sm:block">{user.name.split(" ")[0]}</span>

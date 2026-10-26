@@ -34,10 +34,16 @@ export const getUser = cache(async () => {
   try {
     const { payload } = await jwtVerify(token, secret);
     if (!payload.sub) return null;
-    return await db.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: payload.sub },
       select: { id: true, name: true, email: true, role: true, city: true, teacher: { select: { id: true } } },
     });
+    // ADMIN_EMAILS ro'yxatidagi email egasi avtomatik admin bo'ladi
+    if (user && user.role !== "ADMIN" && isAdminEmail(user.email)) {
+      await db.user.update({ where: { id: user.id }, data: { role: "ADMIN" } });
+      user.role = "ADMIN";
+    }
+    return user;
   } catch {
     return null;
   }
@@ -47,4 +53,27 @@ export async function requireUser(next = "/kabinet") {
   const user = await getUser();
   if (!user) redirect(`/kirish?next=${encodeURIComponent(next)}`);
   return user;
+}
+
+export function isAdminEmail(email: string) {
+  return (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean)
+    .includes(email.toLowerCase());
+}
+
+export async function requireAdmin() {
+  const user = await requireUser("/admin");
+  if (user.role !== "ADMIN") redirect("/kabinet");
+  return user;
+}
+
+export type SessionUser = NonNullable<Awaited<ReturnType<typeof getUser>>>;
+
+/** Kursni tahrirlash huquqi: kurs egasi ustoz, markaz egasi yoki admin */
+export async function canEditCourse(user: SessionUser, courseId: string) {
+  if (user.role === "ADMIN") return true;
+  const c = await db.course.findUnique({ where: { id: courseId }, select: { teacher: { select: { userId: true } }, center: { select: { ownerId: true } } } });
+  return !!c && (c.teacher?.userId === user.id || c.center?.ownerId === user.id);
 }

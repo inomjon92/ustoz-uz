@@ -29,7 +29,11 @@ export default async function Dashboard() {
           <h1 className="text-3xl font-bold">Salom, {user.name.split(" ")[0]}! 👋</h1>
           <p className="text-slate-500">Bugun nimani o&apos;rganamiz?</p>
         </div>
-        <Link href="/kabinet/ustoz" className="btn-ghost">{user.teacher ? "👩‍🏫 Ustoz paneli" : "Ustoz bo'lish"}</Link>
+        <div className="flex flex-wrap gap-2">
+          {user.role === "ADMIN" && <Link href="/admin" className="btn-primary">⚙️ Admin panel</Link>}
+          {user.role === "CENTER_ADMIN" && <Link href="/kabinet/ustoz/kurslar" className="btn-ghost">🏫 Markaz kurslari</Link>}
+          <Link href="/kabinet/ustoz" className="btn-ghost">{user.teacher ? "👩‍🏫 Ustoz paneli" : "Ustoz bo'lish"}</Link>
+        </div>
       </div>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-4">

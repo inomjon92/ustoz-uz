@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/ui";
 export const metadata = { title: "Testlar" };
 
 export default async function TestsPage() {
-  const tests = await db.test.findMany({ include: { subject: true, _count: { select: { questions: true, attempts: true } } }, orderBy: { title: "asc" } });
+  const tests = await db.test.findMany({ where: { questions: { some: {} }, OR: [{ courseId: null }, { course: { published: true } }] }, include: { subject: true, _count: { select: { questions: true, attempts: true } } }, orderBy: { title: "asc" } });
   return (
     <>
       <PageHeader title="Testlar" subtitle="Bilimingizni sinang. O'tish balini to'plasangiz — tekshiriladigan sertifikat beriladi." />

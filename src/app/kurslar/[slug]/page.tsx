@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { getUser } from "@/lib/auth";
+import { canEditCourse, getUser } from "@/lib/auth";
 import { FORMAT_LABEL, LEVEL_LABEL, som } from "@/lib/format";
 import { Stars } from "@/components/ui";
 import { ReviewForm, Submit } from "@/components/forms";
@@ -22,6 +22,8 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
   });
   if (!c) notFound();
   const user = await getUser();
+  const editable = !!user && (await canEditCourse(user, c.id));
+  if (!c.published && !editable) notFound();
   const enrollment = user ? await db.enrollment.findUnique({ where: { userId_courseId: { userId: user.id, courseId: c.id } } }) : null;
   const done = user ? new Set((await db.lessonProgress.findMany({ where: { userId: user.id, lesson: { courseId: c.id } } })).map((p) => p.lessonId)) : new Set<string>();
   const totalMin = c.lessons.reduce((a, l) => a + l.minutes, 0);
@@ -49,6 +51,12 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
 
       <div className="container-x grid gap-8 py-10 lg:grid-cols-[1fr_340px]">
         <div className="space-y-8">
+          {editable && (
+            <div className="card flex flex-wrap items-center justify-between gap-3 border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+              <span>{c.published ? "Siz bu kursning muallifisiz." : "📝 Bu kurs hali qoralama — katalogda ko'rinmaydi."}</span>
+              <Link href={`/kabinet/ustoz/kurslar/${c.id}`} className="font-semibold underline">Tahrirlash →</Link>
+            </div>
+          )}
           {tugadi && enrollment?.completedAt && (
             <div className="card border-emerald-200 bg-emerald-50 p-5 text-emerald-800">
               🎉 Tabriklaymiz! Kursni tugatdingiz. Sertifikatingiz <Link href="/kabinet" className="font-semibold underline">kabinetda</Link>.

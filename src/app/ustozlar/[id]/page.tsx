@@ -14,7 +14,7 @@ export default async function TeacherPage({ params }: { params: Promise<{ id: st
     include: {
       user: true, subjects: true,
       reviews: { include: { author: true }, orderBy: { createdAt: "desc" } },
-      courses: { include: { subject: true, teacher: { include: { user: true } }, center: true } },
+      courses: { where: { published: true }, include: { subject: true, teacher: { include: { user: true } }, center: true } },
     },
   });
   if (!t) notFound();

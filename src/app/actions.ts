@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createSession, destroySession, getUser, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { recomputeRating } from "@/lib/ratings";
 
 export type FormState = { error?: string; ok?: string } | undefined;
 
@@ -76,6 +77,7 @@ export async function enroll(form: FormData) {
   const provider = z.enum(["PAYME", "CLICK", "UZUM"]).catch("PAYME").parse(form.get("provider"));
   const course = await db.course.findUniqueOrThrow({ where: { id: courseId }, include: { lessons: { orderBy: { order: "asc" }, take: 1 } } });
   const user = await requireUser(`/kurslar/${course.slug}`);
+  if (!course.published) redirect(`/kurslar/${course.slug}`);
   const existing = await db.enrollment.findUnique({ where: { userId_courseId: { userId: user.id, courseId } } });
   if (!existing) {
     // Demo: to'lov darhol muvaffaqiyatli deb belgilanadi. Haqiqiy Payme/Click integratsiyasi shu yerga ulanadi.
@@ -174,11 +176,7 @@ export async function addReview(_: FormState, form: FormData): Promise<FormState
   if (existing) await db.review.update({ where: { id: existing.id }, data: { rating, comment } });
   else await db.review.create({ data: { authorId: user.id, rating, comment, [key]: targetId } });
 
-  const agg = await db.review.aggregate({ where: { [key]: targetId }, _avg: { rating: true }, _count: true });
-  const stats = { rating: Math.round((agg._avg.rating ?? 0) * 10) / 10, reviewCount: agg._count };
-  if (target === "teacher") await db.teacherProfile.update({ where: { id: targetId }, data: stats });
-  if (target === "center") await db.center.update({ where: { id: targetId }, data: stats });
-  if (target === "course") await db.course.update({ where: { id: targetId }, data: stats });
+  await recomputeRating(key, targetId);
 
   revalidatePath(path);
   return { ok: "Rahmat! Sharhingiz saqlandi" };

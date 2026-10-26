@@ -15,7 +15,7 @@ export default async function CentersPage({ searchParams }: { searchParams: Prom
   };
   const [subjects, centers] = await Promise.all([
     db.subject.findMany({ orderBy: { name: "asc" } }),
-    db.center.findMany({ where, orderBy: { rating: "desc" }, include: { subjects: true, _count: { select: { courses: true } } } }),
+    db.center.findMany({ where, orderBy: { rating: "desc" }, include: { subjects: true, _count: { select: { courses: { where: { published: true } } } } } }),
   ]);
   return (
     <>

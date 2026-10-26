@@ -6,11 +6,11 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const [subjects, teachers, courses, centers, stats] = await Promise.all([
-    db.subject.findMany({ include: { _count: { select: { teachers: true, courses: true } } }, orderBy: { name: "asc" } }),
+    db.subject.findMany({ include: { _count: { select: { teachers: true, courses: { where: { published: true } } } } }, orderBy: { name: "asc" } }),
     db.teacherProfile.findMany({ take: 3, orderBy: [{ rating: "desc" }, { reviewCount: "desc" }], include: { user: true, subjects: true } }),
     db.course.findMany({ take: 3, where: { published: true }, orderBy: { reviewCount: "desc" }, include: { subject: true, teacher: { include: { user: true } }, center: true } }),
-    db.center.findMany({ take: 3, orderBy: { rating: "desc" }, include: { subjects: true, _count: { select: { courses: true } } } }),
-    Promise.all([db.teacherProfile.count(), db.center.count(), db.course.count(), db.user.count({ where: { role: "STUDENT" } })]),
+    db.center.findMany({ take: 3, orderBy: { rating: "desc" }, include: { subjects: true, _count: { select: { courses: { where: { published: true } } } } } }),
+    Promise.all([db.teacherProfile.count(), db.center.count(), db.course.count({ where: { published: true } }), db.user.count({ where: { role: "STUDENT" } })]),
   ]);
 
   return (

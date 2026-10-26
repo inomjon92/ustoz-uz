@@ -12,7 +12,7 @@ export default async function CenterPage({ params }: { params: Promise<{ slug: s
     include: {
       subjects: true,
       reviews: { include: { author: true }, orderBy: { createdAt: "desc" } },
-      courses: { include: { subject: true, teacher: { include: { user: true } }, center: true } },
+      courses: { where: { published: true }, include: { subject: true, teacher: { include: { user: true } }, center: true } },
     },
   });
   if (!c) notFound();

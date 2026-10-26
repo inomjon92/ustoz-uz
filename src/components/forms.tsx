@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { addReview, bookTeacher, login, register, saveTeacherProfile, type FormState } from "@/app/actions";
 
@@ -125,6 +125,29 @@ export function TeacherProfileForm({ subjects, cities, profile }: { subjects: Su
       </div>
       <Message state={state} />
       <Submit className="btn-primary">Profilni saqlash</Submit>
+    </form>
+  );
+}
+
+/** Server action'ni xato/muvaffaqiyat xabari bilan ishlatadigan umumiy forma */
+export function ActionForm({ action, children, className, submit, resetOnOk }: {
+  action: (state: FormState, form: FormData) => Promise<FormState>;
+  children: React.ReactNode;
+  className?: string;
+  submit: string;
+  resetOnOk?: boolean;
+}) {
+  const [state, run] = useActionState(async (prev: FormState, form: FormData) => {
+    const res = await action(prev, form);
+    if (res?.ok && resetOnOk) formRef.current?.reset();
+    return res;
+  }, undefined);
+  const formRef = useRef<HTMLFormElement>(null);
+  return (
+    <form ref={formRef} action={run} className={className ?? "space-y-4"}>
+      {children}
+      <Message state={state} />
+      <Submit className="btn-primary">{submit}</Submit>
     </form>
   );
 }

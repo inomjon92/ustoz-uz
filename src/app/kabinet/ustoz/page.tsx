@@ -31,7 +31,10 @@ export default async function TeacherDashboard() {
           <h1 className="text-3xl font-bold">Ustoz paneli</h1>
           <p className="text-slate-500">{profile ? "Profilingiz, so'rovlar va kurslaringiz" : "Profilingizni to'ldiring — o'quvchilar sizni katalogda ko'radi"}</p>
         </div>
-        {profile && <Link href={`/ustozlar/${profile.id}`} className="btn-ghost">Ommaviy profilni ko&apos;rish →</Link>}
+        <div className="flex flex-wrap gap-2">
+          <Link href="/kabinet/ustoz/kurslar" className="btn-primary">📚 Kurslar, darslar va testlar</Link>
+          {profile && <Link href={`/ustozlar/${profile.id}`} className="btn-ghost">Ommaviy profilni ko&apos;rish →</Link>}
+        </div>
       </div>
 
       {profile && (
