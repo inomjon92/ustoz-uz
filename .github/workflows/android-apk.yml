@@ -8,6 +8,9 @@ on:
         required: true
         default: "https://ustoz-uz-beta.vercel.app"
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,7 +29,17 @@ jobs:
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
         run: gradle assembleRelease -PsiteUrl="${{ inputs.site_url }}"
+      - name: APK'ni nomlash
+        run: cp android/app/build/outputs/apk/release/*.apk ustoz-uz.apk
       - uses: actions/upload-artifact@v4
         with:
           name: ustoz-uz-apk
-          path: android/app/build/outputs/apk/release/*.apk
+          path: ustoz-uz.apk
+      - name: Telefondan yuklab olish uchun Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="apk-${{ github.run_number }}"
+          gh release create "$TAG" ustoz-uz.apk --latest \
+            --title "Ustoz.uz Android ilovasi (${{ github.run_number }})" \
+            --notes "Sayt: ${{ inputs.site_url }}. Telefonda ustoz-uz.apk faylini yuklab oling va o'rnating."
