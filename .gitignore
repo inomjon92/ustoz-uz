@@ -3,3 +3,7 @@ node_modules
 .env
 *.tsbuildinfo
 next-env.d.ts
+android/.gradle
+android/build
+android/app/build
+android/local.properties
