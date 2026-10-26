@@ -7,6 +7,7 @@ import { Stars } from "@/components/ui";
 import { ReviewForm, Submit } from "@/components/forms";
 import { ReviewList } from "@/components/reviews";
 import { enroll } from "@/app/actions";
+import { liveProviders } from "@/lib/payments";
 
 export default async function CoursePage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ tugadi?: string }> }) {
   const { slug } = await params;
@@ -26,6 +27,8 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
   if (!c.published && !editable) notFound();
   const enrollment = user ? await db.enrollment.findUnique({ where: { userId_courseId: { userId: user.id, courseId: c.id } } }) : null;
   const done = user ? new Set((await db.lessonProgress.findMany({ where: { userId: user.id, lesson: { courseId: c.id } } })).map((p) => p.lessonId)) : new Set<string>();
+  const live = liveProviders();
+  const providers = live.length ? live : ["PAYME", "CLICK", "UZUM"];
   const totalMin = c.lessons.reduce((a, l) => a + l.minutes, 0);
   const firstOpen = c.lessons.find((l) => !done.has(l.id)) ?? c.lessons[0];
 
@@ -117,8 +120,8 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
                 {c.price > 0 && (
                   <fieldset>
                     <legend className="label">To&apos;lov usuli</legend>
-                    <div className="grid grid-cols-3 gap-2">
-                      {["PAYME", "CLICK", "UZUM"].map((p, i) => (
+                    <div className={`grid gap-2 ${providers.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+                      {providers.map((p, i) => (
                         <label key={p} className="cursor-pointer">
                           <input type="radio" name="provider" value={p} defaultChecked={i === 0} className="peer sr-only" />
                           <span className="block rounded-xl border border-slate-200 py-2 text-center text-sm font-semibold peer-checked:border-brand-500 peer-checked:bg-brand-50 peer-checked:text-brand-700">
@@ -127,7 +130,7 @@ export default async function CoursePage({ params, searchParams }: { params: Pro
                         </label>
                       ))}
                     </div>
-                    <p className="mt-2 text-xs text-slate-400">Demo rejim: to&apos;lov avtomatik tasdiqlanadi.</p>
+                    {live.length === 0 && <p className="mt-2 text-xs text-slate-400">Demo rejim: to&apos;lov avtomatik tasdiqlanadi.</p>}
                   </fieldset>
                 )}
                 <Submit>{c.price > 0 ? "Sotib olish" : "Bepul yozilish"}</Submit>

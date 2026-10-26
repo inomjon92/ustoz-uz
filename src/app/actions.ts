@@ -3,11 +3,13 @@
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createSession, destroySession, getUser, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { recomputeRating } from "@/lib/ratings";
+import { clickCheckoutUrl, fulfillPayment, liveProviders, paymeCheckoutUrl, type Provider } from "@/lib/payments";
 
 export type FormState = { error?: string; ok?: string } | undefined;
 
@@ -74,23 +76,36 @@ export async function saveTeacherProfile(_: FormState, form: FormData): Promise<
 
 export async function enroll(form: FormData) {
   const courseId = String(form.get("courseId"));
-  const provider = z.enum(["PAYME", "CLICK", "UZUM"]).catch("PAYME").parse(form.get("provider"));
   const course = await db.course.findUniqueOrThrow({ where: { id: courseId }, include: { lessons: { orderBy: { order: "asc" }, take: 1 } } });
   const user = await requireUser(`/kurslar/${course.slug}`);
   if (!course.published) redirect(`/kurslar/${course.slug}`);
+  const firstLesson = course.lessons[0] ? `/kurslar/${course.slug}/dars/${course.lessons[0].order}` : `/kurslar/${course.slug}`;
+
   const existing = await db.enrollment.findUnique({ where: { userId_courseId: { userId: user.id, courseId } } });
-  if (!existing) {
-    // Demo: to'lov darhol muvaffaqiyatli deb belgilanadi. Haqiqiy Payme/Click integratsiyasi shu yerga ulanadi.
-    await db.enrollment.create({
-      data: {
-        userId: user.id,
-        courseId,
-        payment: course.price > 0 ? { create: { userId: user.id, amount: course.price, provider, status: "PAID" } } : undefined,
-      },
-    });
+  if (existing) redirect(firstLesson);
+
+  if (course.price === 0) {
+    await db.enrollment.create({ data: { userId: user.id, courseId } });
+    revalidatePath(`/kurslar/${course.slug}`);
+    redirect(firstLesson);
   }
-  revalidatePath(`/kurslar/${course.slug}`);
-  redirect(course.lessons[0] ? `/kurslar/${course.slug}/dars/${course.lessons[0].order}` : `/kurslar/${course.slug}`);
+
+  const live = liveProviders();
+  if (live.length === 0) {
+    // Demo rejim: Payme/Click kalitlari kiritilmagan, to'lov darhol tasdiqlanadi
+    const provider = z.enum(["PAYME", "CLICK", "UZUM"]).catch("PAYME").parse(form.get("provider"));
+    const p = await db.payment.create({ data: { userId: user.id, courseId, amount: course.price, provider } });
+    await fulfillPayment(p.id);
+    revalidatePath(`/kurslar/${course.slug}`);
+    redirect(firstLesson);
+  }
+
+  const provider = z.enum(live as [Provider, ...Provider[]]).catch(live[0]).parse(form.get("provider"));
+  const payment = await db.payment.create({ data: { userId: user.id, courseId, amount: course.price, provider } });
+  const h = await headers();
+  const origin = process.env.APP_URL ?? `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host")}`;
+  const returnUrl = `${origin}/tolov/${payment.id}`;
+  redirect(provider === "PAYME" ? paymeCheckoutUrl(payment.id, payment.amount, returnUrl) : clickCheckoutUrl(payment.id, payment.amount, returnUrl));
 }
 
 function certCode() {

@@ -146,6 +146,7 @@ model Course {
   reviews       Review[]
   tests         Test[]
   certificates  Certificate[]
+  payments      Payment[]
   createdAt     DateTime     @default(now())
 
   @@index([subjectId])
@@ -271,12 +272,25 @@ model Payment {
   id           String          @id @default(cuid())
   userId       String
   user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  amount       Int
+  amount       Int // so'm
   provider     PaymentProvider
   status       PaymentStatus   @default(PENDING)
+  courseId     String?
+  course       Course?         @relation(fields: [courseId], references: [id], onDelete: SetNull)
   enrollmentId String?         @unique
   enrollment   Enrollment?     @relation(fields: [enrollmentId], references: [id], onDelete: SetNull)
   createdAt    DateTime        @default(now())
+
+  // To'lov tizimi tomonidagi tranzaksiya ma'lumotlari (Payme / Click)
+  externalId   String?
+  externalTime BigInt? // Payme create_time (ms)
+  performedAt  DateTime?
+  cancelledAt  DateTime?
+  cancelReason Int?
+  paymeState   Int? // 1 yaratildi, 2 to'landi, -1 / -2 bekor qilindi
+
+  @@index([provider, externalId])
+  @@index([userId])
 }
 
 model Booking {

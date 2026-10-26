@@ -14,7 +14,7 @@ export default async function Dashboard() {
     }),
     db.testAttempt.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, take: 10, include: { test: true } }),
     db.certificate.findMany({ where: { userId: user.id }, orderBy: { issuedAt: "desc" } }),
-    db.payment.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, include: { enrollment: { include: { course: true } } } }),
+    db.payment.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, include: { course: true } }),
     db.booking.findMany({ where: { studentId: user.id }, orderBy: { date: "asc" }, include: { teacher: { include: { user: true } } } }),
   ]);
   const progress = await db.lessonProgress.groupBy({ by: ["lessonId"], where: { userId: user.id } }).then(async (rows) => {
@@ -116,8 +116,8 @@ export default async function Dashboard() {
               <div className="card divide-y divide-slate-100 text-sm">
                 {payments.map((p) => (
                   <div key={p.id} className="px-4 py-3">
-                    <div className="flex justify-between"><span className="font-medium">{p.enrollment?.course.title ?? "To'lov"}</span><span className="font-semibold">{som(p.amount)}</span></div>
-                    <p className="text-xs text-slate-400">{p.provider} · {PAYMENT_LABEL[p.status]} · {date(p.createdAt)}</p>
+                    <div className="flex justify-between"><span className="font-medium">{p.course?.title ?? "To'lov"}</span><span className="font-semibold">{som(p.amount)}</span></div>
+                    <p className="text-xs text-slate-400">{p.provider} · {p.status === "PENDING" ? <a href={`/tolov/${p.id}`} className="text-brand-600">{PAYMENT_LABEL[p.status]}</a> : PAYMENT_LABEL[p.status]} · {date(p.createdAt)}</p>
                   </div>
                 ))}
               </div>

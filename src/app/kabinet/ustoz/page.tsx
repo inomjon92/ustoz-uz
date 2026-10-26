@@ -22,7 +22,7 @@ export default async function TeacherDashboard() {
     }),
   ]);
   const students = profile?.courses.reduce((a, c) => a + c._count.enrollments, 0) ?? 0;
-  const revenue = profile ? (await db.payment.aggregate({ where: { status: "PAID", enrollment: { course: { teacherId: profile.id } } }, _sum: { amount: true } }))._sum.amount ?? 0 : 0;
+  const revenue = profile ? (await db.payment.aggregate({ where: { status: "PAID", course: { teacherId: profile.id } }, _sum: { amount: true } }))._sum.amount ?? 0 : 0;
 
   return (
     <div className="container-x py-10">

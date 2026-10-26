@@ -29,6 +29,19 @@ Demo hisoblar (parol `parol123`): `talaba@ustoz.uz` (o'quvchi), `ustoz@ustoz.uz`
 User · TeacherProfile · Center · Subject · Course · Lesson · Enrollment · LessonProgress ·
 Review · Test · Question · Option · TestAttempt · Certificate · Payment · Booking
 
+## To'lovlar (Payme, Click)
+Kalitlar kiritilmagan bo'lsa sayt **demo rejimda** ishlaydi (to'lov avtomatik tasdiqlanadi).
+Vercel → Settings → Environment Variables:
+
+| O'zgaruvchi | Qayerdan |
+|---|---|
+| `PAYME_MERCHANT_ID`, `PAYME_KEY` | business.payme.uz → kassa sozlamalari (test uchun `PAYME_TEST=true` va test kaliti) |
+| `CLICK_SERVICE_ID`, `CLICK_MERCHANT_ID`, `CLICK_SECRET_KEY` | merchant.click.uz → servis sozlamalari |
+
+To'lov tizimlari kabinetida ko'rsatiladigan manzillar:
+- Payme endpoint: `https://<sayt>/api/payme`
+- Click Prepare: `https://<sayt>/api/click/prepare`, Complete: `https://<sayt>/api/click/complete`
+
 ## Keyingi bosqichlar
 Payme/Click haqiqiy integratsiyasi · markaz admin paneli va kurs yaratish · SMS/Telegram bildirishnomalar ·
 rasm yuklash · admin moderatsiya · Vercel + Neon/Supabase'ga deploy
